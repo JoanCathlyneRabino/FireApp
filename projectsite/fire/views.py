@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic.list import ListView
-from .models import Locations, Incident, FireStation, FireTruck, Firefighters, WeatherConditions
+from .models import Location, Incident, FireStation, FireTruck, Firefighters, WeatherConditions
 from django.db import connection
 from collections import defaultdict
 from django.http import JsonResponse
@@ -15,7 +15,7 @@ from .forms import FireStationForm, IncidentForm, LocationForm, FireTruckForm, F
 
 
 class HomePageView(ListView):
-    model = Locations
+    model = Location
     context_object_name = 'home'
     template_name = "chart.html"
 class ChartView(ListView):
@@ -387,7 +387,7 @@ class IncidentDeleteView(DeleteView):
 
 
 class LocationListView(ListView):
-    model = Locations
+    model = Location
     template_name = 'location_list.html'
     context_object_name = 'locations'
     paginate_by = 10
@@ -400,19 +400,19 @@ class LocationListView(ListView):
         return queryset.order_by('id')  
 
 class LocationCreateView(CreateView):
-    model = Locations
+    model = Location
     form_class = LocationForm
     template_name = 'location_form.html'
     success_url = reverse_lazy('location_list')
 
 class LocationUpdateView(UpdateView):
-    model = Locations
+    model = Location
     form_class = LocationForm
     template_name = 'location_form.html'
     success_url = reverse_lazy('location_list')
 
 class LocationDeleteView(DeleteView):
-    model = Locations
+    model = Location
     template_name = 'location_confirm_delete.html'
     success_url = reverse_lazy('location_list')
     
