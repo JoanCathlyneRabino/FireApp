@@ -28,6 +28,7 @@ class ChartView(ListView):
     def get_queryset(self, *args, **kwargs):
         pass
     
+
 def PieCountbySeverity(request):
     query = '''
     SELECT severity_level, COUNT(*) as count

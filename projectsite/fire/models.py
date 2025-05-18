@@ -9,7 +9,7 @@ class BaseModel(models.Model):
         abstract = True
 
 
-class Locations(BaseModel):
+class Location(BaseModel):
     name = models.CharField(max_length=150)
     latitude = models.DecimalField(
         max_digits=22, decimal_places=16, null=True, blank=True)
@@ -28,7 +28,7 @@ class Incident(BaseModel):
         ('Moderate Fire', 'Moderate Fire'),
         ('Major Fire', 'Major Fire'),
     )
-    location = models.ForeignKey(Locations, on_delete=models.CASCADE)
+    location = models.ForeignKey(Location, on_delete=models.CASCADE)
     date_time = models.DateTimeField(blank=True, null=True)
     severity_level = models.CharField(max_length=45, choices=SEVERITY_CHOICES)
     description = models.CharField(max_length=250)
