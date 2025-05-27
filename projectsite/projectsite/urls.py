@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 
-from fire.views import HomePageView, city_data, ChartView,PieCountbySeverity, LineCountbyMonth, MultilineIncidentTop3Country, multipleBarbySeverity, FireStationListView, FireStationCreateView, FireStationUpdateView, FireStationDeleteView, IncidentListView, IncidentCreateView, IncidentUpdateView, IncidentDeleteView, LocationListView, LocationCreateView, LocationUpdateView, LocationDeleteView, FireTruckListView, FireTruckCreateView, FireTruckUpdateView, FireTruckDeleteView, firefighter_list, firefighter_create, firefighter_update, firefighter_delete
+from fire.views import HomePageView, city_data, ChartView,PieCountbySeverity, LineCountbyMonth, MultilineIncidentTop3Country, multipleBarbySeverity, DoughnutChart, RadarChart, BubbleChart, barChart, FireStationListView, FireStationCreateView, FireStationUpdateView, FireStationDeleteView, IncidentListView, IncidentCreateView, IncidentUpdateView, IncidentDeleteView, LocationListView, LocationCreateView, LocationUpdateView, LocationDeleteView, FireTruckListView, FireTruckCreateView, FireTruckUpdateView, FireTruckDeleteView, firefighter_list, firefighter_create, firefighter_update, firefighter_delete
 
 from fire import views
 
@@ -13,6 +13,10 @@ urlpatterns = [
     path('lineChart/', LineCountbyMonth, name='chart'),
     path('multilineChart/', MultilineIncidentTop3Country, name='chart'),
     path('multipleBarChart/', multipleBarbySeverity, name='chart'),
+    path('doughnut/', DoughnutChart, name='chart'),
+    path('radar/', RadarChart, name='chart'),
+    path('bubble/', BubbleChart, name='chart'),
+    path('barChart', barChart, name='chart'),
     path('stations', views.map_station, name='map-station'),
     path('fire-incidents-map/', views.fire_incidents_map, name='fire-incidents-map'),
     path('fire-stations/', FireStationListView.as_view(), name='fire_station_list'),
@@ -32,7 +36,7 @@ urlpatterns = [
     path('firetrucks/create/', FireTruckCreateView.as_view(), name='firetruck_create'),
     path('firetrucks/<int:pk>/update/', FireTruckUpdateView.as_view(), name='firetruck_update'),
     path('firetrucks/<int:pk>/delete/', FireTruckDeleteView.as_view(), name='firetruck_delete'),
-     path('firefighters/', views.firefighter_list, name='firefighter_list'),
+    path('firefighters/', views.firefighter_list, name='firefighter_list'),
     path('firefighters/new/', views.firefighter_create, name='firefighter_create'),
     path('firefighters/<int:pk>/edit/', views.firefighter_update, name='firefighter_update'),
     path('firefighters/<int:pk>/delete/', views.firefighter_delete, name='firefighter_delete'),

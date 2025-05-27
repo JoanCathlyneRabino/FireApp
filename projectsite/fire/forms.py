@@ -1,5 +1,5 @@
 from django import forms
-from .models import FireStation, Incident, Location, FireTruck,Firefighters, WeatherConditions
+from .models import FireStation, Incident, Locations, FireTruck,Firefighters, WeatherConditions
 
 class FireStationForm(forms.ModelForm):
     class Meta:
@@ -16,7 +16,7 @@ class IncidentForm(forms.ModelForm):
 
 class LocationForm(forms.ModelForm):
     class Meta:
-        model = Location
+        model = Locations
         fields = ['name', 'latitude', 'longitude', 'address', 'city', 'country']
 
 

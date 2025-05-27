@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic.list import ListView
-from .models import Location, Incident, FireStation, FireTruck, Firefighters, WeatherConditions
+from .models import Locations, Incident, FireStation, FireTruck, Firefighters, WeatherConditions
 from django.db import connection
 from collections import defaultdict
 from django.http import JsonResponse
@@ -15,7 +15,7 @@ from .forms import FireStationForm, IncidentForm, LocationForm, FireTruckForm, F
 
 
 class HomePageView(ListView):
-    model = Location
+    model = Locations
     context_object_name = 'home'
     template_name = "chart.html"
 class ChartView(ListView):
@@ -28,7 +28,6 @@ class ChartView(ListView):
     def get_queryset(self, *args, **kwargs):
         pass
     
-
 def PieCountbySeverity(request):
     query = '''
     SELECT severity_level, COUNT(*) as count
@@ -143,28 +142,156 @@ def MultilineIncidentTop3Country(request):
 
 
 def multipleBarbySeverity(request):
-    incidents = Incident.objects.all()
-    result = defaultdict(lambda: defaultdict(int))
+    query = '''
+    SELECT
+        fi.severity_level,
+        strftime('%m', fi.date_time) AS month,
+        COUNT(fi.id) AS incident_count
+    FROM
+        fire_incident fi
+    GROUP BY fi.severity_level, month
+    '''
+    with connection.cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
 
-    for incident in incidents:
-        month = incident.date_time.month if incident.date_time else None
-        severity = incident.severity_level
-        
-        if month is not None:
-            result[severity][month] += 1
+    result = {}
+    months = set(str(i).zfill(2) for i in range(1, 13))
 
-    # Convert defaultdict to regular dict for JSON serialization
-    result = {k: dict(v) for k, v in result.items()}
+    for row in rows:
+        level = str(row[0])
+        month = row[1]
+        total_incidents = row[2]
 
-    # Filter out None values and sort the results
+        if level not in result:
+            result[level] = {month: 0 for month in months}
+        result[level] [month] = total_incidents
+
+    # Sort months within each severity level
     for level in result:
-        result[level] = {k: v for k, v in result[level].items() if k is not None}
         result[level] = dict(sorted(result[level].items()))
-    
-    # Convert month numbers to month names
-    result_with_month_names = {severity: {calendar.month_abbr[month]: count for month, count in months.items()} for severity, months in result.items()}
+    return JsonResponse(result)
 
-    return JsonResponse(result_with_month_names)
+def DoughnutChart(request):
+    query = '''
+    SELECT severity_level, COUNT(*) as count
+    FROM fire_incident
+    GROUP BY severity_level
+    '''
+    with connection.cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+    labels = []
+    data = []
+    background_colors = ["#1f353d", "#f1a648", "#1fda73", "#fa709a"]  # Expand if more levels
+
+    for i, (severity, count) in enumerate(rows):
+        labels.append(severity)
+        data.append(count)
+
+    chart_data = {
+        "labels": labels,
+        "datasets": [{
+            "data": data,
+            "backgroundColor": background_colors[:len(labels)]
+        }]
+    }
+
+    return JsonResponse(chart_data)
+
+def RadarChart(request):
+    # Simulated categories and values
+    categories = ["Rescue", "Suppression", "Evacuation", "Drills", "Investigation"]
+    team1_data = [20, 25, 15, 10, 30]
+    team2_data = [15, 20, 20, 15, 25]
+
+    data = {
+        "labels": categories,
+        "datasets": [
+            {
+                "label": "Team A",
+                "data": team1_data,
+                "borderColor": "#1f7daf",
+                "backgroundColor": "rgba(29, 122, 243, 0.25)",
+                "pointBackgroundColor": "#1f7daf"
+            },
+            {
+                "label": "Team B",
+                "data": team2_data,
+                "borderColor": "#71f6ac",
+                "backgroundColor": "rgba(113, 246, 172, 0.25)",
+                "pointBackgroundColor": "#71f6ac"
+            }
+        ]
+    }
+    return JsonResponse(data)
+
+def BubbleChart(request):
+     # Count incidents grouped by location
+    location_data = Incident.objects.values(
+        'location__latitude',
+        'location__longitude',
+        'location__name'
+    ).annotate(
+        count=Count('id')
+    ).exclude(
+        location__latitude__isnull=True,
+        location__longitude__isnull=True
+    )
+
+    dataset = []
+
+    for loc in location_data:
+        dataset.append({
+            "x": float(loc['location__longitude']),
+            "y": float(loc['location__latitude']),
+            "r": loc['count'],  # Bubble radius
+            "label": loc['location__name']
+        })
+
+    response_data = {
+        "datasets": [
+            {
+                "label": "Incidents per Location",
+                "data": dataset,
+                "backgroundColor": "#f39c12"
+            }
+        ]
+    }
+    return JsonResponse(response_data)
+def barChart(request):
+    query = '''
+    SELECT
+        strftime('%m', fi.date_time) AS month,
+        COUNT(fi.id) AS incident_count
+    FROM
+        fire_incident fi
+    GROUP BY month
+    '''
+    with connection.cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+    # Map month numbers to month names
+    month_map = {
+        "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
+        "05": "May", "06": "Jun", "07": "Jul", "08": "Aug",
+        "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec"
+    }
+
+    month_labels = [month_map[str(i).zfill(2)] for i in range(1, 13)]
+    data = {str(i).zfill(2): 0 for i in range(1, 13)}
+    
+    for row in rows:
+        month = row[0]
+        count = row[1]
+        data[month] = count
+
+    return JsonResponse({
+        "labels": month_labels,          
+        "data": [data[m] for m in sorted(data.keys())]  
+    })
 
 
 def map_station(request):
@@ -387,7 +514,7 @@ class IncidentDeleteView(DeleteView):
 
 
 class LocationListView(ListView):
-    model = Location
+    model = Locations
     template_name = 'location_list.html'
     context_object_name = 'locations'
     paginate_by = 10
@@ -400,19 +527,19 @@ class LocationListView(ListView):
         return queryset.order_by('id')  
 
 class LocationCreateView(CreateView):
-    model = Location
+    model = Locations
     form_class = LocationForm
     template_name = 'location_form.html'
     success_url = reverse_lazy('location_list')
 
 class LocationUpdateView(UpdateView):
-    model = Location
+    model = Locations
     form_class = LocationForm
     template_name = 'location_form.html'
     success_url = reverse_lazy('location_list')
 
 class LocationDeleteView(DeleteView):
-    model = Location
+    model = Locations
     template_name = 'location_confirm_delete.html'
     success_url = reverse_lazy('location_list')
     
